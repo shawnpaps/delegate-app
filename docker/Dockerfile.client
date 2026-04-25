@@ -38,8 +38,7 @@ RUN cat > package.json << 'EOF'
     "tailwindcss": "^4.2.4",
     "@tailwindcss/postcss": "^4.2.4",
     "postcss": "^8.5.3",
-    "typescript": "~5.6.3",
-    "daisyui": "^5.0.0"
+    "typescript": "~5.6.3"
   }
 }
 EOF
@@ -108,10 +107,9 @@ export default {
 }
 EOF
 
-# Keep the original v4 CSS syntax
+# Keep the original v4 CSS syntax (without daisyui for now)
 RUN mkdir -p src && cat > src/index.css << 'EOF'
 @import "tailwindcss";
-@import "daisyui";
 EOF
 
 # Build the client (vite handles TypeScript internally, no separate tsc step)
