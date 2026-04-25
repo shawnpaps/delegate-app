@@ -35,10 +35,11 @@ RUN cat > package.json << 'EOF'
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.3.4",
     "vite": "^5.4.11",
-    "tailwindcss": "^3.4.17",
-    "autoprefixer": "^10.4.20",
+    "tailwindcss": "^4.2.4",
+    "@tailwindcss/postcss": "^4.2.4",
     "postcss": "^8.5.3",
-    "typescript": "~5.6.3"
+    "typescript": "~5.6.3",
+    "daisyui": "^5.0.0"
   }
 }
 EOF
@@ -98,29 +99,19 @@ RUN cat > tsconfig.node.json << 'EOF'
 }
 EOF
 
-# Create postcss.config.js for Tailwind
+# Create postcss.config.js for Tailwind v4
 RUN cat > postcss.config.js << 'EOF'
 export default {
   plugins: {
-    tailwindcss: {},
-    autoprefixer: {},
+    '@tailwindcss/postcss': {},
   },
 }
 EOF
 
-# Create tailwind.config.js
-RUN cat > tailwind.config.js << 'EOF'
-/** @type {import('tailwindcss').Config} */
-export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
-  theme: {
-    extend: {},
-  },
-  plugins: [],
-}
+# Keep the original v4 CSS syntax
+RUN mkdir -p src && cat > src/index.css << 'EOF'
+@import "tailwindcss";
+@import "daisyui";
 EOF
 
 # Build the client (vite handles TypeScript internally, no separate tsc step)
