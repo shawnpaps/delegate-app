@@ -1,0 +1,38 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.client
+    container_name: delegate-app-frontend
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_BACKEND_URL=${VITE_BACKEND_URL:-http://localhost:3001}
+      - VITE_CONVEX_URL=${VITE_CONVEX_URL}
+      - VITE_WORKOS_CLIENT_ID=${VITE_WORKOS_CLIENT_ID}
+      - VITE_WORKOS_REDIRECT_URI=${VITE_WORKOS_REDIRECT_URI}
+    networks:
+      - delegate-network
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    container_name: delegate-app-backend
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - MAILGUN_API_KEY=${MAILGUN_API_KEY}
+      - MAILGUN_DOMAIN=${MAILGUN_DOMAIN}
+      - CONVEX_HTTP_URL=${CONVEX_HTTP_URL}
+      - CONVEX_ADMIN_KEY=${CONVEX_ADMIN_KEY}
+      - BACKEND_URL=${BACKEND_URL:-http://localhost:3001}
+    networks:
+      - delegate-network
+    restart: unless-stopped
+
+networks:
+  delegate-network:
+    driver: bridge
