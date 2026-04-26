@@ -19,6 +19,7 @@ export const sendAssigneeEmail = internalAction({
   handler: async (ctx, args) => {
     const backendUrl = process.env.BACKEND_URL || "http://localhost:3001";
     console.log(`[DEBUG] sendAssigneeEmail action started for task ${args.taskId}`);
+    console.log(`[DEBUG] Received args:`, JSON.stringify(args, null, 2));
     console.log(`[DEBUG] Backend URL: ${backendUrl}`);
 
     try {

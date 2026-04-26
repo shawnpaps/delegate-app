@@ -76,6 +76,13 @@ export const create = mutation({
 
     // Schedule email sending via action
     // Use the extracted email/name (not from DB) to ensure we have the values
+    console.log("[DEBUG] About to schedule email with:", {
+      taskId,
+      creatorName: userName,
+      creatorEmail: userEmail,
+      assigneeEmail: args.assigneeEmail
+    });
+    
     await ctx.scheduler.runAfter(0, api.actions.sendAssigneeEmail, {
       taskId,
       assigneeEmail: args.assigneeEmail,
@@ -86,7 +93,7 @@ export const create = mutation({
       title: args.title,
       description: args.description,
     });
-    console.log("[DEBUG] Scheduled email with creatorEmail:", userEmail, "creatorName:", userName);
+    console.log("[DEBUG] Scheduled email successfully");
 
     return { taskId, emailToken };
   },

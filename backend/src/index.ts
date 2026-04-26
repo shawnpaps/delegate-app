@@ -353,18 +353,22 @@ app.post("/api/send-assignee-email", async (c) => {
     
     const { to, taskTitle, taskDescription, creatorName, creatorEmail, emailToken } = body;
 
-    if (!to || !taskTitle || !creatorEmail || !emailToken) {
-      console.error("[DEBUG] Missing required fields:", { to, taskTitle, creatorEmail, emailToken });
+    if (!to || !taskTitle || !emailToken) {
+      console.error("[DEBUG] Missing required fields:", { to, taskTitle, emailToken });
       return c.json({ error: "Missing required fields" }, 400);
     }
+    
+    // Use fallback values if creator info is missing
+    const effectiveCreatorEmail = creatorEmail || "noreply@delegate.app";
+    const effectiveCreatorName = creatorName || "Someone";
 
-    console.log("[DEBUG] Sending assignee email to:", to);
+    console.log("[DEBUG] Sending assignee email to:", to, "from:", effectiveCreatorEmail);
     await sendAssigneeEmail({
       to,
       taskTitle,
       taskDescription,
-      creatorName: creatorName || creatorEmail,
-      creatorEmail,
+      creatorName: effectiveCreatorName,
+      creatorEmail: effectiveCreatorEmail,
       emailToken,
     });
 
