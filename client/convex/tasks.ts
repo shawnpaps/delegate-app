@@ -46,8 +46,17 @@ export const create = mutation({
         email: userEmail,
         name: userName,
       });
+      console.log("[DEBUG] Created new user:", userId, "with email:", userEmail);
     } else {
       userId = user._id;
+      // Update user if email/name is missing
+      if (!user.email || user.email === "" || !user.name || user.name === "") {
+        await ctx.db.patch(userId, {
+          email: userEmail || user.email,
+          name: userName || user.name,
+        });
+        console.log("[DEBUG] Updated existing user:", userId, "with email:", userEmail);
+      }
     }
 
     // Generate unique token for email completion
@@ -66,19 +75,18 @@ export const create = mutation({
     });
 
     // Schedule email sending via action
-    const userDoc = await ctx.db.get(userId);
-    if (userDoc) {
-      await ctx.scheduler.runAfter(0, api.actions.sendAssigneeEmail, {
-        taskId,
-        assigneeEmail: args.assigneeEmail,
-        assigneeName: args.assigneeName,
-        creatorName: userDoc.name,
-        creatorEmail: userDoc.email,
-        emailToken,
-        title: args.title,
-        description: args.description,
-      });
-    }
+    // Use the extracted email/name (not from DB) to ensure we have the values
+    await ctx.scheduler.runAfter(0, api.actions.sendAssigneeEmail, {
+      taskId,
+      assigneeEmail: args.assigneeEmail,
+      assigneeName: args.assigneeName,
+      creatorName: userName,
+      creatorEmail: userEmail,
+      emailToken,
+      title: args.title,
+      description: args.description,
+    });
+    console.log("[DEBUG] Scheduled email with creatorEmail:", userEmail, "creatorName:", userName);
 
     return { taskId, emailToken };
   },
