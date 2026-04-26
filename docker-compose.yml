@@ -1,20 +1,4 @@
 services:
-  frontend:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile.client
-      args:
-        - VITE_BACKEND_URL=${VITE_BACKEND_URL:-http://localhost:3001}
-        - VITE_CONVEX_URL=${VITE_CONVEX_URL}
-        - VITE_WORKOS_CLIENT_ID=${VITE_WORKOS_CLIENT_ID}
-        - VITE_WORKOS_REDIRECT_URI=${VITE_WORKOS_REDIRECT_URI}
-    container_name: delegate-app-frontend
-    ports:
-      - "3000:80"
-    networks:
-      - delegate-network
-    restart: unless-stopped
-
   backend:
     build:
       context: .
