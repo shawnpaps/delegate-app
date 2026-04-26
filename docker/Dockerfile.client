@@ -1,6 +1,18 @@
 # Multi-stage build for the client (React + Vite)
 FROM node:22-alpine AS builder
 
+# Build arguments for environment variables
+ARG VITE_CONVEX_URL
+ARG VITE_BACKEND_URL
+ARG VITE_WORKOS_CLIENT_ID
+ARG VITE_WORKOS_REDIRECT_URI
+
+# Set environment variables for build
+ENV VITE_CONVEX_URL=$VITE_CONVEX_URL
+ENV VITE_BACKEND_URL=$VITE_BACKEND_URL
+ENV VITE_WORKOS_CLIENT_ID=$VITE_WORKOS_CLIENT_ID
+ENV VITE_WORKOS_REDIRECT_URI=$VITE_WORKOS_REDIRECT_URI
+
 WORKDIR /app
 
 # Copy entire client directory (including convex, src, public)

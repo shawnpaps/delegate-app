@@ -556,10 +556,10 @@ app.post("/api/trigger-reminders", async (c) => {
 
 const port = process.env.PORT ? parseInt(process.env.PORT) : 3001;
 
-console.log(`Email service running at http://localhost:${port}`);
+console.log(`Email service running at http://0.0.0.0:${port}`);
 
 serve({
   fetch: app.fetch,
   port,
-  hostname: "127.0.0.1",
+  hostname: "0.0.0.0",
 });
