@@ -17,18 +17,34 @@ export const create = mutation({
       throw new Error("Not authenticated");
     }
 
+    // Debug: Log the full identity object to see available fields
+    console.log("[DEBUG] WorkOS Identity:", JSON.stringify(identity, null, 2));
+
     // Get or create user
     const user = await ctx.db
       .query("users")
       .withIndex("by_workosId", (q) => q.eq("workosId", identity.subject))
       .unique();
 
+    // Extract email from various possible locations in identity
+    const userEmail = identity.email || 
+                      (identity as any).user?.email || 
+                      (identity as any).user?.emails?.[0] || 
+                      "";
+    
+    const userName = identity.name || 
+                     (identity as any).user?.name || 
+                     userEmail || 
+                     "";
+
+    console.log("[DEBUG] Extracted email:", userEmail, "name:", userName);
+
     let userId;
     if (!user) {
       userId = await ctx.db.insert("users", {
         workosId: identity.subject,
-        email: identity.email || "",
-        name: identity.name || identity.email || "",
+        email: userEmail,
+        name: userName,
       });
     } else {
       userId = user._id;

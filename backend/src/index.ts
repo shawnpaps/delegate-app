@@ -140,7 +140,7 @@ function generateAssigneeEmailHtml(params: {
               <p style="color: #4a4a4a; font-size: 16px; line-height: 24px; margin: 0 0 16px 0;">Hi there,</p>
               
               <p style="color: #4a4a4a; font-size: 16px; line-height: 24px; margin: 0 0 16px 0;">
-                <strong>${escapeHtml(params.creatorName)}</strong> (${escapeHtml(params.creatorEmail)}) has assigned you a new task:
+                <strong>${escapeHtml(params.creatorName || "Someone")}</strong>${params.creatorEmail ? ` (${escapeHtml(params.creatorEmail)})` : ""} has assigned you a new task:
               </p>
               
               <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px; margin: 0 0 24px 0;">
