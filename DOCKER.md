@@ -19,7 +19,7 @@ This document explains how to deploy the Delegate App using Docker and Docker Co
 2. **Configure environment variables:**
    ```bash
    cp .env.docker.example .env
-   # Edit .env with your actual values from Convex, WorkOS, and Mailgun
+   # Edit .env with your actual values from Convex, WorkOS, and Resend
    ```
 
 3. **Build and start the containers:**
@@ -40,8 +40,9 @@ This document explains how to deploy the Delegate App using Docker and Docker Co
 | `VITE_CONVEX_URL` | Your Convex deployment URL | Convex Dashboard → Settings → URL |
 | `VITE_WORKOS_CLIENT_ID` | WorkOS Auth client ID | WorkOS Dashboard → Configuration |
 | `VITE_WORKOS_REDIRECT_URI` | OAuth redirect URL | Must match your domain + `/auth/callback` |
-| `MAILGUN_API_KEY` | Mailgun API key | Mailgun Dashboard → Settings → API Keys |
-| `MAILGUN_DOMAIN` | Your Mailgun domain | Mailgun Dashboard → Domains |
+| `RESEND_API_KEY` | Resend API key | Resend Dashboard → API Keys |
+| `RESEND_DOMAIN` | Verified sending/receiving domain | Resend Dashboard → Domains |
+| `RESEND_WEBHOOK_SECRET` | Webhook signing secret for inbound email events | Resend Dashboard → Webhooks |
 | `CONVEX_HTTP_URL` | Convex HTTP actions URL | Same as `VITE_CONVEX_URL` |
 | `CONVEX_ADMIN_KEY` | Convex admin key | Convex Dashboard → Settings → Deploy Key |
 
@@ -139,7 +140,7 @@ docker-compose up -d --build
 ### Webhook failures
 - Ensure `BACKEND_URL` is publicly accessible
 - Verify Convex can reach your backend
-- Check Mailgun webhook configuration
+- Check Resend webhook configuration
 
 ## Architecture
 
@@ -159,7 +160,7 @@ docker-compose up -d --build
                             │
                             ▼
                      ┌──────────────┐
-                     │   Mailgun    │
+                     │    Resend    │
                      │  (External)  │
                      └──────────────┘
 ```
@@ -170,4 +171,4 @@ For issues related to:
 - **Docker/Deployment**: Check this guide and Docker logs
 - **Convex**: Visit https://docs.convex.dev
 - **WorkOS Auth**: Visit https://workos.com/docs
-- **Mailgun**: Visit https://documentation.mailgun.com/
+- **Resend**: Visit https://resend.com/docs

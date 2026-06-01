@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import type { Id } from "../../convex/_generated/dataModel";
+import type { Doc, Id } from "../../convex/_generated/dataModel";
 
 interface TaskCreationProps {
   onSuccess?: () => void;
@@ -20,7 +20,7 @@ export function TaskCreation({ onSuccess }: TaskCreationProps) {
 
   const createTask = useMutation(api.tasks.create);
   const createAssignee = useMutation(api.assignees.create);
-  const assignees = useQuery(api.assignees.list) ?? [];
+  const assignees: Doc<"assignees">[] = useQuery(api.assignees.list) ?? [];
 
   const handleAssigneeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
@@ -91,12 +91,11 @@ export function TaskCreation({ onSuccess }: TaskCreationProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Task Info Bento */}
-        <div className="card bg-base-100 border border-base-200 shadow-sm">
-          <div className="card-body">
-            <h3 className="card-title text-lg flex items-center gap-2">
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <div className="form-panel">
+          <div className="form-panel-header">
+            <span className="panel-icon" aria-hidden="true">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-5 w-5"
@@ -109,9 +108,14 @@ export function TaskCreation({ onSuccess }: TaskCreationProps) {
                   clipRule="evenodd"
                 />
               </svg>
-              Task Information
-            </h3>
-            <div className="form-control w-full mt-4">
+            </span>
+            <div>
+              <h3>Task information</h3>
+              <p>Define the outcome you want handed off.</p>
+            </div>
+          </div>
+          <div className="grid gap-4">
+            <div className="form-control w-full">
               <label className="label">
                 <span className="label-text">Task Title</span>
               </label>
@@ -138,10 +142,9 @@ export function TaskCreation({ onSuccess }: TaskCreationProps) {
           </div>
         </div>
 
-        {/* Assignee Bento */}
-        <div className="card bg-base-100 border border-base-200 shadow-sm">
-          <div className="card-body">
-            <h3 className="card-title text-lg flex items-center gap-2">
+        <div className="form-panel">
+          <div className="form-panel-header">
+            <span className="panel-icon panel-icon-accent" aria-hidden="true">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-5 w-5"
@@ -154,9 +157,14 @@ export function TaskCreation({ onSuccess }: TaskCreationProps) {
                   clipRule="evenodd"
                 />
               </svg>
-              Assignee
-            </h3>
-            <div className="form-control w-full mt-4">
+            </span>
+            <div>
+              <h3>Assignee</h3>
+              <p>Choose an existing person or add a new contact.</p>
+            </div>
+          </div>
+          <div className="grid gap-4">
+            <div className="form-control w-full">
               <label className="label">
                 <span className="label-text">Select or Add Assignee</span>
               </label>
@@ -176,7 +184,7 @@ export function TaskCreation({ onSuccess }: TaskCreationProps) {
             </div>
 
             {(showNewAssignee || !selectedAssigneeId) && (
-              <div className="space-y-4 mt-2">
+              <div className="grid gap-4 rounded-lg border border-dashed border-base-300 bg-base-200/45 p-4">
                 <div className="form-control w-full">
                   <label className="label">
                     <span className="label-text">Name</span>
@@ -208,10 +216,9 @@ export function TaskCreation({ onSuccess }: TaskCreationProps) {
           </div>
         </div>
 
-        {/* Reminder Bento */}
-        <div className="card bg-base-100 border border-base-200 shadow-sm lg:col-span-2">
-          <div className="card-body">
-            <h3 className="card-title text-lg flex items-center gap-2">
+        <div className="form-panel lg:col-span-2">
+          <div className="form-panel-header">
+            <span className="panel-icon panel-icon-warm" aria-hidden="true">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-5 w-5"
@@ -224,9 +231,13 @@ export function TaskCreation({ onSuccess }: TaskCreationProps) {
                   clipRule="evenodd"
                 />
               </svg>
-              Reminder Schedule
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+            </span>
+            <div>
+              <h3>Reminder schedule</h3>
+              <p>Pick when this handoff should come back into view.</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="form-control w-full">
                 <label className="label">
                   <span className="label-text">Date</span>
@@ -251,12 +262,11 @@ export function TaskCreation({ onSuccess }: TaskCreationProps) {
                   required
                 />
               </div>
-            </div>
           </div>
         </div>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end border-t border-base-300 pt-5">
         <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
           {isSubmitting ? (
             <>
