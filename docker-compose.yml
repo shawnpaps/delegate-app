@@ -1,23 +1,69 @@
 services:
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.client
+      args:
+        VITE_CONVEX_URL: ${VITE_CONVEX_URL}
+        VITE_BACKEND_URL: ${VITE_BACKEND_URL:-https://delegateapi.sudocreate.app}
+        VITE_WORKOS_CLIENT_ID: ${VITE_WORKOS_CLIENT_ID}
+        VITE_WORKOS_REDIRECT_URI: ${VITE_WORKOS_REDIRECT_URI:-https://delegate.sudocreate.app/callback}
+    container_name: delegate-app-frontend
+    expose:
+      - "80"
+    networks:
+      - delegate-internal
+    restart: unless-stopped
+
   backend:
     build:
       context: .
       dockerfile: docker/Dockerfile.backend
     container_name: delegate-app-backend
-    ports:
-      - "3001:3001"
     environment:
-      - PORT=3001
-      - RESEND_API_KEY=${RESEND_API_KEY}
-      - RESEND_DOMAIN=${RESEND_DOMAIN}
-      - RESEND_WEBHOOK_SECRET=${RESEND_WEBHOOK_SECRET}
-      - CONVEX_HTTP_URL=${CONVEX_HTTP_URL}
-      - CONVEX_ADMIN_KEY=${CONVEX_ADMIN_KEY}
-      - BACKEND_URL=${BACKEND_URL:-http://localhost:3001}
+      PORT: ${PORT:-3001}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      RESEND_DOMAIN: ${RESEND_DOMAIN}
+      RESEND_WEBHOOK_SECRET: ${RESEND_WEBHOOK_SECRET}
+      CONVEX_HTTP_URL: ${CONVEX_HTTP_URL}
+      CONVEX_ADMIN_KEY: ${CONVEX_ADMIN_KEY}
+      BACKEND_URL: ${BACKEND_URL:-https://delegateapi.sudocreate.app}
+    expose:
+      - "3001"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     networks:
-      - delegate-network
+      - delegate-internal
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: delegate-app-caddy
+    depends_on:
+      - frontend
+      - backend
+    environment:
+      FRONTEND_HOST: ${FRONTEND_HOST:-delegate.sudocreate.app}
+      BACKEND_HOST: ${BACKEND_HOST:-delegateapi.sudocreate.app}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      - delegate-internal
     restart: unless-stopped
 
 networks:
-  delegate-network:
+  delegate-internal:
     driver: bridge
+
+volumes:
+  caddy-data:
+  caddy-config:

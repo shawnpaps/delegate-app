@@ -4,12 +4,33 @@ import { api } from "./_generated/api";
 
 const http = httpRouter();
 
+function unauthorizedResponse() {
+  return new Response(JSON.stringify({ error: "Unauthorized" }), {
+    status: 401,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+function requireAdminKey(request: Request) {
+  const adminKey = process.env.CONVEX_ADMIN_KEY;
+  const authorization = request.headers.get("Authorization");
+
+  if (!adminKey || authorization !== `Bearer ${adminKey}`) {
+    return unauthorizedResponse();
+  }
+
+  return null;
+}
+
 // HTTP endpoint to complete a task via email webhook
 http.route({
   path: "/complete-task",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
     try {
+      const authError = requireAdminKey(request);
+      if (authError) return authError;
+
       const body = await request.json();
       const { emailToken } = body;
 
@@ -44,6 +65,9 @@ http.route({
   method: "GET",
   handler: httpAction(async (ctx, request) => {
     try {
+      const authError = requireAdminKey(request);
+      if (authError) return authError;
+
       const url = new URL(request.url);
       const emailToken = url.searchParams.get("emailToken");
 
@@ -84,6 +108,9 @@ http.route({
   method: "GET",
   handler: httpAction(async (ctx, request) => {
     try {
+      const authError = requireAdminKey(request);
+      if (authError) return authError;
+
       const now = Date.now();
 
       const tasks = await ctx.runQuery(api.tasks.getPendingTasksForReminders, {

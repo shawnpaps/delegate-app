@@ -1,13 +1,11 @@
 # Multi-stage build for the client (React + Vite)
 FROM node:22-alpine AS builder
 
-# Build arguments for environment variables
 ARG VITE_CONVEX_URL
 ARG VITE_BACKEND_URL
 ARG VITE_WORKOS_CLIENT_ID
 ARG VITE_WORKOS_REDIRECT_URI
 
-# Set environment variables for build
 ENV VITE_CONVEX_URL=$VITE_CONVEX_URL
 ENV VITE_BACKEND_URL=$VITE_BACKEND_URL
 ENV VITE_WORKOS_CLIENT_ID=$VITE_WORKOS_CLIENT_ID
@@ -15,122 +13,18 @@ ENV VITE_WORKOS_REDIRECT_URI=$VITE_WORKOS_REDIRECT_URI
 
 WORKDIR /app
 
-# Copy entire client directory (including convex, src, public)
-COPY client/ ./
-
-# Create a fresh package.json with standard tooling
-RUN cat > package.json << 'EOF'
-{
-  "name": "client",
-  "version": "0.0.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "dev": "vite dev",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "@convex-dev/workos": "^0.0.1",
-    "@convex-dev/workos-authkit": "^0.2.2",
-    "@workos-inc/authkit-react": "^0.16.1",
-    "convex": "^1.36.1",
-    "react": "^19.2.5",
-    "react-dom": "^19.2.5"
-  },
-  "devDependencies": {
-    "@types/node": "^24.12.2",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^4.3.4",
-    "vite": "^5.4.11",
-    "tailwindcss": "^4.2.4",
-    "@tailwindcss/postcss": "^4.2.4",
-    "postcss": "^8.5.3",
-    "typescript": "~5.6.3"
-  }
-}
-EOF
-
-# Install dependencies
+COPY client/package.json ./
+RUN npm pkg set "devDependencies.vite=npm:@voidzero-dev/vite-plus-core@latest" \
+  "devDependencies.vite-plus=latest" \
+  "devDependencies.@tailwindcss/vite=^4.2.4"
 RUN npm install --legacy-peer-deps
 
-# Create a compatible vite.config.ts
-RUN cat > vite.config.ts << 'EOF'
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+COPY client/ ./
+RUN npx vp build
 
-export default defineConfig({
-  plugins: [react()],
-  build: {
-    outDir: 'dist',
-    emptyOutDir: true
-  }
-})
-EOF
-
-# Create a minimal tsconfig.json that skips type checking
-RUN cat > tsconfig.json << 'EOF'
-{
-  "compilerOptions": {
-    "target": "ES2020",
-    "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "module": "ESNext",
-    "skipLibCheck": true,
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "jsx": "react-jsx",
-    "strict": false,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "noFallthroughCasesInSwitch": true
-  },
-  "include": ["src"],
-  "references": [{ "path": "./tsconfig.node.json" }]
-}
-EOF
-
-RUN cat > tsconfig.node.json << 'EOF'
-{
-  "compilerOptions": {
-    "composite": true,
-    "skipLibCheck": true,
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "allowSyntheticDefaultImports": true
-  },
-  "include": ["vite.config.ts"]
-}
-EOF
-
-# Create postcss.config.js for Tailwind v4
-RUN cat > postcss.config.js << 'EOF'
-export default {
-  plugins: {
-    '@tailwindcss/postcss': {},
-  },
-}
-EOF
-
-# Keep the original v4 CSS syntax (without daisyui for now)
-RUN mkdir -p src && cat > src/index.css << 'EOF'
-@import "tailwindcss";
-EOF
-
-# Build the client (vite handles TypeScript internally, no separate tsc step)
-RUN npm run build
-
-# Production stage - serve with nginx
 FROM nginx:alpine AS production
 
-# Copy built files to nginx
 COPY --from=builder /app/dist /usr/share/nginx/html
-
-# Copy custom nginx config
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80

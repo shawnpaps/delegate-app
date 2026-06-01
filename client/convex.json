@@ -12,11 +12,8 @@
       }
     },
     "prod": {
-      "configure": {
-        "redirectUris": ["https://your-production-domain.com/callback"],
-        "appHomepageUrl": "https://your-production-domain.com",
-        "corsOrigins": ["https://your-production-domain.com"]
-      }
+      "environmentType": "production",
+      "configure": false
     }
   }
 }
