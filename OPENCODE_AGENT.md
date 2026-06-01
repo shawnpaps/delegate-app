@@ -13,7 +13,7 @@ Ensure tasks are followed up on and completed using automated email workflows.
 
 - Frontend: React + Tailwind + DaisyUI
 - Backend (Core): Convex
-- Email Service: Mailgun + React Email
+- Email Service: Resend
 - Email Backend: Hono (already scaffolded)
 - Authentication: WorkOS
 
@@ -80,7 +80,7 @@ Includes:
 
 Implementation:
 
-- Mailgun inbound webhook → Hono backend
+- Resend inbound webhook → Hono backend
 - Extract token from email
 - Match task and update status
 

@@ -10,45 +10,46 @@ config({ path: join(__dirname, "..", ".env") });
 
 import { Hono } from "hono";
 import { serve } from "@hono/node-server";
-import Mailgun from "mailgun.js";
-import FormData from "form-data";
+import { Resend } from "resend";
 
 const app = new Hono();
 
-// Mailgun configuration
-const MAILGUN_DOMAIN = process.env.MAILGUN_DOMAIN || "";
-const MAILGUN_API_KEY = process.env.MAILGUN_API_KEY || "";
+// Resend configuration
+const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
+const RESEND_DOMAIN = process.env.RESEND_DOMAIN || "";
+const RESEND_WEBHOOK_SECRET = process.env.RESEND_WEBHOOK_SECRET || "";
 const CONVEX_HTTP_URL = process.env.CONVEX_HTTP_URL || "";
 const CONVEX_ADMIN_KEY = process.env.CONVEX_ADMIN_KEY || "";
 
 // Debug logging
-console.log("Mailgun config:", {
-  domain: MAILGUN_DOMAIN,
-  hasApiKey: !!MAILGUN_API_KEY,
-  apiKeyLength: MAILGUN_API_KEY?.length || 0,
+console.log("Resend config:", {
+  domain: RESEND_DOMAIN,
+  hasApiKey: !!RESEND_API_KEY,
+  apiKeyLength: RESEND_API_KEY?.length || 0,
+  hasWebhookSecret: !!RESEND_WEBHOOK_SECRET,
 });
 
-// Initialize Mailgun SDK client
-const mailgun = new Mailgun(FormData);
-const mg = mailgun.client({
-  username: 'api',
-  key: MAILGUN_API_KEY,
-  url: 'https://api.mailgun.net'
-});
-console.log("[DEBUG] Mailgun SDK client initialized successfully");
+const resend = new Resend(RESEND_API_KEY);
+console.log("[DEBUG] Resend SDK client initialized successfully");
 
-// Helper function to send email via Mailgun SDK
-async function sendMailgunEmail(params: {
+// Helper function to send email via Resend SDK
+async function sendResendEmail(params: {
   to: string;
   from: string;
   subject: string;
   html: string;
   replyTo?: string;
 }) {
-  console.log("[DEBUG] sendMailgunEmail called with:", { to: params.to, from: params.from, subject: params.subject });
+  console.log("[DEBUG] sendResendEmail called with:", { to: params.to, from: params.from, subject: params.subject });
   
   try {
-    const messageData: any = {
+    const messageData: {
+      from: string;
+      to: string;
+      subject: string;
+      html: string;
+      reply_to?: string;
+    } = {
       from: params.from,
       to: params.to,
       subject: params.subject,
@@ -56,18 +57,23 @@ async function sendMailgunEmail(params: {
     };
     
     if (params.replyTo) {
-      messageData['h:Reply-To'] = params.replyTo;
+      messageData.reply_to = params.replyTo;
     }
     
-    console.log("[DEBUG] Sending email via Mailgun SDK to domain:", MAILGUN_DOMAIN);
+    console.log("[DEBUG] Sending email via Resend SDK from domain:", RESEND_DOMAIN);
     console.log("[DEBUG] Message data:", JSON.stringify(messageData, null, 2));
     
-    const result = await mg.messages.create(MAILGUN_DOMAIN, messageData);
+    const result = await resend.emails.send(messageData);
+
+    if (result.error) {
+      console.error("[DEBUG] Resend SDK error response:", JSON.stringify(result.error, null, 2));
+      throw new Error(result.error.message);
+    }
     
-    console.log("[DEBUG] Mailgun SDK success response:", JSON.stringify(result, null, 2));
-    return result;
+    console.log("[DEBUG] Resend SDK success response:", JSON.stringify(result.data, null, 2));
+    return result.data;
   } catch (error) {
-    console.error("[DEBUG] Error in sendMailgunEmail:", error);
+    console.error("[DEBUG] Error in sendResendEmail:", error);
     if (error instanceof Error) {
       console.error("[DEBUG] Error message:", error.message);
       console.error("[DEBUG] Error stack:", error.stack);
@@ -95,15 +101,15 @@ async function sendAssigneeEmail(params: {
     emailToken: params.emailToken,
   });
 
-  console.log("[DEBUG] Generated HTML email content, calling sendMailgunEmail...");
+  console.log("[DEBUG] Generated HTML email content, calling sendResendEmail...");
 
   try {
-    await sendMailgunEmail({
-      from: `Delegate <tasks@${MAILGUN_DOMAIN}>`,
+    await sendResendEmail({
+      from: `Delegate <tasks@${RESEND_DOMAIN}>`,
       to: params.to,
       subject: `New task assigned: ${params.taskTitle}`,
       html,
-      replyTo: `complete+${params.emailToken}@${MAILGUN_DOMAIN}`,
+      replyTo: `complete+${params.emailToken}@${RESEND_DOMAIN}`,
     });
     console.log("[DEBUG] sendAssigneeEmail completed successfully");
   } catch (error) {
@@ -180,6 +186,87 @@ function escapeHtml(text: string): string {
     .replace(/'/g, '&#039;');
 }
 
+type InboundEmail = {
+  from?: string;
+  to?: string;
+  subject?: string;
+  textBody?: string;
+  htmlBody?: string;
+};
+
+async function parseResendInboundEmail(c: any): Promise<InboundEmail> {
+  const payload = await c.req.text();
+  let event: any;
+
+  if (RESEND_WEBHOOK_SECRET) {
+    event = await resend.webhooks.verify({
+      payload,
+      headers: {
+        id: c.req.header("svix-id") || "",
+        timestamp: c.req.header("svix-timestamp") || "",
+        signature: c.req.header("svix-signature") || "",
+      },
+      webhookSecret: RESEND_WEBHOOK_SECRET,
+    });
+  } else {
+    event = JSON.parse(payload);
+  }
+
+  if (event.type !== "email.received") {
+    console.log("Ignoring Resend webhook event:", event.type);
+    return {};
+  }
+
+  const metadata = event.data || {};
+  const emailId = metadata.email_id;
+  const metadataTo = Array.isArray(metadata.to) ? metadata.to[0] : metadata.to;
+
+  if (!emailId) {
+    return {
+      from: metadata.from,
+      to: metadataTo,
+      subject: metadata.subject,
+    };
+  }
+
+  const result = await resend.emails.receiving.get(emailId);
+  if (result.error) {
+    throw new Error(result.error.message);
+  }
+
+  const email = result.data as any;
+
+  return {
+    from: email?.from || metadata.from,
+    to: Array.isArray(email?.to) ? email.to[0] : email?.to || metadataTo,
+    subject: email?.subject || metadata.subject,
+    textBody: email?.text || "",
+    htmlBody: email?.html || "",
+  };
+}
+
+async function parseFormInboundEmail(c: any): Promise<InboundEmail> {
+  const body = await c.req.formData();
+
+  return {
+    from: body.get("from") as string,
+    to: ((body.get("recipient") as string) || (body.get("To") as string)) ?? undefined,
+    subject: (body.get("subject") as string) ?? undefined,
+    textBody: ((body.get("body-plain") as string) || (body.get("stripped-text") as string)) ?? undefined,
+    htmlBody: ((body.get("body-html") as string) || (body.get("stripped-html") as string)) ?? undefined,
+  };
+}
+
+async function parseInboundEmail(c: any): Promise<InboundEmail> {
+  const contentType = c.req.header("content-type") || "";
+
+  if (contentType.includes("application/json")) {
+    return parseResendInboundEmail(c);
+  }
+
+  return parseFormInboundEmail(c);
+}
+
 // Helper function to send reminder email
 async function sendReminderEmail(params: {
   to: string;
@@ -197,8 +284,8 @@ async function sendReminderEmail(params: {
     createdAt: params.createdAt,
   });
 
-  await sendMailgunEmail({
-    from: `Delegate <reminders@${MAILGUN_DOMAIN}>`,
+  await sendResendEmail({
+    from: `Delegate <reminders@${RESEND_DOMAIN}>`,
     to: params.to,
     subject: `Reminder: ${params.taskTitle}`,
     html,
@@ -276,8 +363,8 @@ async function sendCompletionConfirmation(params: {
     completedAt: params.completedAt,
   });
 
-  await sendMailgunEmail({
-    from: `Delegate <notifications@${MAILGUN_DOMAIN}>`,
+  await sendResendEmail({
+    from: `Delegate <notifications@${RESEND_DOMAIN}>`,
     to: params.to,
     subject: `Task completed: ${params.taskTitle}`,
     html,
@@ -433,16 +520,11 @@ app.post("/api/send-completion-confirmation", async (c) => {
   }
 });
 
-// Mailgun webhook for incoming emails
+// Email webhook for incoming replies. Resend posts JSON email.received events.
+// Form payloads are still accepted during provider cutover.
 app.post("/api/webhook/email", async (c) => {
   try {
-    const body = await c.req.formData();
-
-    const from = body.get("from") as string;
-    const to = (body.get("recipient") as string) || (body.get("To") as string);
-    const subject = body.get("subject") as string;
-    const textBody = (body.get("body-plain") as string) || (body.get("stripped-text") as string);
-    const htmlBody = (body.get("body-html") as string) || (body.get("stripped-html") as string);
+    const { from, to, subject, textBody, htmlBody } = await parseInboundEmail(c);
 
     console.log("Received email webhook:", { from, to, subject });
 
