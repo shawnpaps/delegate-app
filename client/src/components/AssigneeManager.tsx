@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import type { Id } from "../../convex/_generated/dataModel";
+import type { Doc, Id } from "../../convex/_generated/dataModel";
 
 interface AssigneeManagerProps {
   onClose?: () => void;
@@ -12,7 +12,7 @@ export function AssigneeManager({ onClose }: AssigneeManagerProps) {
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const assignees = useQuery(api.assignees.list) ?? [];
+  const assignees: Doc<"assignees">[] = useQuery(api.assignees.list) ?? [];
   const createAssignee = useMutation(api.assignees.create);
   const removeAssignee = useMutation(api.assignees.remove);
 
@@ -46,11 +46,21 @@ export function AssigneeManager({ onClose }: AssigneeManagerProps) {
   };
 
   return (
-    <div className="space-y-6">
-      <form onSubmit={handleSubmit} className="card bg-base-100 border border-base-200">
-        <div className="card-body">
-          <h4 className="card-title text-base">Add New Assignee</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+    <div className="space-y-5">
+      <form onSubmit={handleSubmit} className="form-panel">
+        <div className="form-panel-header">
+          <span className="panel-icon panel-icon-accent" aria-hidden="true">
+            <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">
+              <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM3 18a5 5 0 0110 0H3zM15 7a1 1 0 011 1v2h2a1 1 0 110 2h-2v2a1 1 0 11-2 0v-2h-2a1 1 0 110-2h2V8a1 1 0 011-1z" />
+            </svg>
+          </span>
+          <div>
+            <h3>Add assignee</h3>
+            <p>Save trusted contacts for faster delegation.</p>
+          </div>
+        </div>
+        <div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="form-control">
               <label className="label">
                 <span className="label-text">Name</span>
@@ -78,7 +88,7 @@ export function AssigneeManager({ onClose }: AssigneeManagerProps) {
               />
             </div>
           </div>
-          <div className="card-actions justify-end mt-4">
+          <div className="mt-5 flex justify-end">
             <button type="submit" className="btn btn-primary btn-sm" disabled={isSubmitting}>
               {isSubmitting ? (
                 <span className="loading loading-spinner loading-xs"></span>
@@ -91,11 +101,16 @@ export function AssigneeManager({ onClose }: AssigneeManagerProps) {
       </form>
 
       {assignees.length > 0 && (
-        <div className="card bg-base-100 border border-base-200">
-          <div className="card-body">
-            <h4 className="card-title text-base mb-4">Saved Assignees</h4>
-            <div className="overflow-x-auto">
-              <table className="table table-zebra table-sm">
+        <section className="directory-panel">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <p className="eyebrow">Directory</p>
+              <h3 className="text-lg font-semibold text-base-content">Saved assignees</h3>
+            </div>
+            <span className="count-pill">{assignees.length}</span>
+          </div>
+          <div className="overflow-x-auto">
+              <table className="table table-sm">
                 <thead>
                   <tr>
                     <th>Name</th>
@@ -112,6 +127,7 @@ export function AssigneeManager({ onClose }: AssigneeManagerProps) {
                         <button
                           onClick={() => handleRemove(assignee._id)}
                           className="btn btn-ghost btn-xs text-error"
+                          title="Remove assignee"
                         >
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -131,9 +147,8 @@ export function AssigneeManager({ onClose }: AssigneeManagerProps) {
                   ))}
                 </tbody>
               </table>
-            </div>
           </div>
-        </div>
+        </section>
       )}
 
       {onClose && (
