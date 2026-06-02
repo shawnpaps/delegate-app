@@ -1,6 +1,6 @@
-import { useState, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { useAuth } from "@workos-inc/authkit-react";
-import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
+import { Authenticated, Unauthenticated, AuthLoading, useConvexAuth } from "convex/react";
 import { TaskCreation } from "./components/TaskCreation";
 import { TaskList } from "./components/TaskList";
 import { AssigneeManager } from "./components/AssigneeManager";
@@ -69,8 +69,31 @@ const pageCopy: Record<ActiveTab, { eyebrow: string; title: string; description:
 };
 
 function App() {
-  const { user, signIn, signOut } = useAuth();
+  const { user, signIn, signOut, getAccessToken } = useAuth();
+  const convexAuth = useConvexAuth();
   const [activeTab, setActiveTab] = useState<ActiveTab>("tasks");
+
+  useEffect(() => {
+    const tag = "[AuthDiag]";
+    console.log(tag, "authkit user:", !!user, "| convex isLoading:", convexAuth.isLoading, "| convex isAuthenticated:", convexAuth.isAuthenticated);
+    if (!user) return;
+    getAccessToken()
+      .then((token) => {
+        console.log(tag, "getAccessToken() succeeded, token length:", token?.length ?? 0);
+        const parts = token?.split(".");
+        if (parts?.length === 3) {
+          try {
+            const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
+            console.log(tag, "JWT iss:", payload.iss, "| aud:", payload.aud, "| sub:", String(payload.sub ?? "").slice(0, 12) + "...");
+          } catch {
+            console.log(tag, "JWT payload decode failed");
+          }
+        }
+      })
+      .catch((err: Error) => {
+        console.log(tag, "getAccessToken() failed:", err.name, "-", err.message);
+      });
+  }, [user, convexAuth.isAuthenticated, getAccessToken]);
   const copy = pageCopy[activeTab];
 
   return (
