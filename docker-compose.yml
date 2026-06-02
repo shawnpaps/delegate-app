@@ -11,9 +11,17 @@ services:
     container_name: delegate-app-frontend
     expose:
       - "80"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK:-traefik-qfiy}"
+      - "traefik.http.routers.delegate-frontend.rule=Host(`${FRONTEND_HOST:-delegate.sudocreate.app}`)"
+      - "traefik.http.routers.delegate-frontend.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}"
+      - "traefik.http.routers.delegate-frontend.tls=true"
+      - "traefik.http.routers.delegate-frontend.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}"
+      - "traefik.http.services.delegate-frontend.loadbalancer.server.port=80"
     networks:
       - delegate-internal
-      - caddy
+      - traefik
     restart: unless-stopped
 
   backend:
@@ -31,6 +39,14 @@ services:
       BACKEND_URL: ${BACKEND_URL:-https://delegateapi.sudocreate.app}
     expose:
       - "3001"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK:-traefik-qfiy}"
+      - "traefik.http.routers.delegate-backend.rule=Host(`${BACKEND_HOST:-delegateapi.sudocreate.app}`)"
+      - "traefik.http.routers.delegate-backend.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}"
+      - "traefik.http.routers.delegate-backend.tls=true"
+      - "traefik.http.routers.delegate-backend.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}"
+      - "traefik.http.services.delegate-backend.loadbalancer.server.port=3001"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3001/"]
       interval: 30s
@@ -39,12 +55,12 @@ services:
       start_period: 10s
     networks:
       - delegate-internal
-      - caddy
+      - traefik
     restart: unless-stopped
 
 networks:
   delegate-internal:
     driver: bridge
-  caddy:
+  traefik:
     external: true
-    name: ${CADDY_NETWORK:-caddy}
+    name: ${TRAEFIK_NETWORK:-traefik-qfiy}
