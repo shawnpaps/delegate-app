@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
-import { getCurrentUser } from "./authUsers";
+import { getCurrentUser, getOrCreateCurrentUser } from "./authUsers";
 
 export const create = mutation({
   args: {
@@ -13,7 +13,7 @@ export const create = mutation({
       throw new Error("Not authenticated");
     }
 
-    const user = await getCurrentUser(ctx);
+    const user = await getOrCreateCurrentUser(ctx);
     if (!user) {
       throw new Error("Not authenticated");
     }

@@ -18,7 +18,35 @@ function getIdentityName(identity: {
   return identity.name || fullName || getIdentityEmail(identity);
 }
 
+async function findUser(ctx: any, authId: string, email: string) {
+  const userByAuthId = await ctx.db
+    .query("users")
+    .withIndex("by_authId", (q: any) => q.eq("authId", authId))
+    .first();
+
+  if (userByAuthId || !email) {
+    return userByAuthId;
+  }
+
+  return await ctx.db
+    .query("users")
+    .withIndex("by_email", (q: any) => q.eq("email", email))
+    .first();
+}
+
 export async function getCurrentUser(ctx: any) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) {
+    return null;
+  }
+
+  const authId = identity.tokenIdentifier;
+  const email = getIdentityEmail(identity);
+
+  return await findUser(ctx, authId, email);
+}
+
+export async function getOrCreateCurrentUser(ctx: any) {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
     return null;
@@ -28,17 +56,7 @@ export async function getCurrentUser(ctx: any) {
   const email = getIdentityEmail(identity);
   const name = getIdentityName(identity);
 
-  let user = await ctx.db
-    .query("users")
-    .withIndex("by_authId", (q: any) => q.eq("authId", authId))
-    .unique();
-
-  if (!user && email) {
-    user = await ctx.db
-      .query("users")
-      .withIndex("by_email", (q: any) => q.eq("email", email))
-      .unique();
-  }
+  const user = await findUser(ctx, authId, email);
 
   if (!user) {
     const userId = await ctx.db.insert("users", {

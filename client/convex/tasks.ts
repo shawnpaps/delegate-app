@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { query, mutation, internalQuery, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
-import { getCurrentUser } from "./authUsers";
+import { getCurrentUser, getOrCreateCurrentUser } from "./authUsers";
 
 // Public mutation to create a task
 export const create = mutation({
@@ -19,7 +19,7 @@ export const create = mutation({
     }
 
     // Get or create user
-    const user = await getCurrentUser(ctx);
+    const user = await getOrCreateCurrentUser(ctx);
     if (!user) {
       throw new Error("Not authenticated");
     }
