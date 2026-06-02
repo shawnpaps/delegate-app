@@ -1,6 +1,6 @@
 import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 
 const http = httpRouter();
 
@@ -42,7 +42,7 @@ http.route({
       }
 
       // Call the action to complete the task
-      const result = await ctx.runAction(api.actions.completeViaWebhook, {
+      const result = await ctx.runAction(internal.actions.completeViaWebhook, {
         emailToken,
       });
 
@@ -113,7 +113,7 @@ http.route({
 
       const now = Date.now();
 
-      const tasks = await ctx.runQuery(api.tasks.getPendingTasksForReminders, {
+      const tasks = await ctx.runQuery(internal.tasks.getPendingTasksForReminders, {
         now,
       });
 

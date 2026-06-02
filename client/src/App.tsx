@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { useAuth } from "@workos-inc/authkit-react";
+import { SignInButton, useAuth, useUser } from "@clerk/react";
 import { Authenticated, Unauthenticated, AuthLoading, useConvexAuth } from "convex/react";
 import { TaskCreation } from "./components/TaskCreation";
 import { TaskList } from "./components/TaskList";
@@ -69,17 +69,18 @@ const pageCopy: Record<ActiveTab, { eyebrow: string; title: string; description:
 };
 
 function App() {
-  const { user, signIn, signOut, getAccessToken } = useAuth();
+  const { isSignedIn, signOut, getToken } = useAuth();
+  const { user } = useUser();
   const convexAuth = useConvexAuth();
   const [activeTab, setActiveTab] = useState<ActiveTab>("tasks");
 
   useEffect(() => {
     const tag = "[AuthDiag]";
-    console.log(tag, "authkit user:", !!user, "| convex isLoading:", convexAuth.isLoading, "| convex isAuthenticated:", convexAuth.isAuthenticated);
-    if (!user) return;
-    getAccessToken()
+    console.log(tag, "clerk signed in:", !!isSignedIn, "| convex isLoading:", convexAuth.isLoading, "| convex isAuthenticated:", convexAuth.isAuthenticated);
+    if (!isSignedIn) return;
+    getToken({ template: "convex" })
       .then((token) => {
-        console.log(tag, "getAccessToken() succeeded, token length:", token?.length ?? 0);
+        console.log(tag, "getToken({ template: 'convex' }) succeeded, token length:", token?.length ?? 0);
         const parts = token?.split(".");
         if (parts?.length === 3) {
           try {
@@ -91,9 +92,9 @@ function App() {
         }
       })
       .catch((err: Error) => {
-        console.log(tag, "getAccessToken() failed:", err.name, "-", err.message);
+        console.log(tag, "getToken({ template: 'convex' }) failed:", err.name, "-", err.message);
       });
-  }, [user, convexAuth.isAuthenticated, getAccessToken]);
+  }, [isSignedIn, convexAuth.isAuthenticated, convexAuth.isLoading, getToken]);
   const copy = pageCopy[activeTab];
 
   return (
@@ -132,16 +133,16 @@ function App() {
             </AuthLoading>
             <Authenticated>
               <span className="hidden max-w-64 truncate rounded-full border border-base-300 bg-base-200/70 px-3 py-1.5 text-sm text-base-content/65 md:inline">
-                {user?.email}
+                {user?.primaryEmailAddress?.emailAddress}
               </span>
               <button onClick={() => signOut()} className="btn btn-ghost btn-sm">
                 Sign out
               </button>
             </Authenticated>
             <Unauthenticated>
-              <button onClick={() => signIn()} className="btn btn-primary btn-sm">
-                Sign in
-              </button>
+              <SignInButton mode="modal">
+                <button className="btn btn-primary btn-sm">Sign in</button>
+              </SignInButton>
             </Unauthenticated>
           </div>
         </div>
@@ -161,9 +162,9 @@ function App() {
                 Lightweight delegation for small business owners. Create tasks, assign them by
                 email, and keep accountability moving with reminders.
               </p>
-              <button onClick={() => signIn()} className="btn btn-primary mt-8">
-                Get started
-              </button>
+              <SignInButton mode="modal">
+                <button className="btn btn-primary mt-8">Get started</button>
+              </SignInButton>
             </div>
 
             <div className="preview-panel">

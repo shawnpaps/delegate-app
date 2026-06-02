@@ -4,10 +4,9 @@ services:
       context: .
       dockerfile: docker/Dockerfile.client
       args:
-        VITE_CONVEX_URL: ${VITE_CONVEX_URL}
+        VITE_CONVEX_URL: ${VITE_CONVEX_URL:?Set VITE_CONVEX_URL to your production Convex client URL}
         VITE_BACKEND_URL: ${VITE_BACKEND_URL:-https://delegateapi.sudocreate.app}
-        VITE_WORKOS_CLIENT_ID: ${VITE_WORKOS_CLIENT_ID}
-        VITE_WORKOS_REDIRECT_URI: ${VITE_WORKOS_REDIRECT_URI:-https://delegate.sudocreate.app/callback}
+        VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY:?Set VITE_CLERK_PUBLISHABLE_KEY to your production Clerk publishable key}
     container_name: delegate-app-frontend
     expose:
       - "80"
@@ -31,11 +30,11 @@ services:
     container_name: delegate-app-backend
     environment:
       PORT: ${PORT:-3001}
-      RESEND_API_KEY: ${RESEND_API_KEY}
-      RESEND_DOMAIN: ${RESEND_DOMAIN}
-      RESEND_WEBHOOK_SECRET: ${RESEND_WEBHOOK_SECRET}
-      CONVEX_HTTP_URL: ${CONVEX_HTTP_URL}
-      CONVEX_ADMIN_KEY: ${CONVEX_ADMIN_KEY}
+      RESEND_API_KEY: ${RESEND_API_KEY:?Set RESEND_API_KEY}
+      RESEND_DOMAIN: ${RESEND_DOMAIN:?Set RESEND_DOMAIN}
+      RESEND_WEBHOOK_SECRET: ${RESEND_WEBHOOK_SECRET:?Set RESEND_WEBHOOK_SECRET}
+      CONVEX_HTTP_URL: ${CONVEX_HTTP_URL:?Set CONVEX_HTTP_URL to your production Convex HTTP actions URL}
+      CONVEX_ADMIN_KEY: ${CONVEX_ADMIN_KEY:?Set CONVEX_ADMIN_KEY}
       BACKEND_URL: ${BACKEND_URL:-https://delegateapi.sudocreate.app}
     expose:
       - "3001"

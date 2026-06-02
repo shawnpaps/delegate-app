@@ -2,7 +2,7 @@
 
 import { v } from "convex/values";
 import { internalAction } from "./_generated/server";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 
 // Action to send assignee email (runs in background in Node.js runtime)
 export const sendAssigneeEmail = internalAction({
@@ -16,7 +16,7 @@ export const sendAssigneeEmail = internalAction({
     title: v.string(),
     description: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     const backendUrl = process.env.BACKEND_URL || "http://localhost:3001";
     console.log(`[DEBUG] sendAssigneeEmail action started for task ${args.taskId}`);
     console.log(`[DEBUG] Received args:`, JSON.stringify(args, null, 2));
@@ -63,12 +63,20 @@ export const sendAssigneeEmail = internalAction({
 // Scheduled action to check and send reminders
 export const checkAndSendReminders = internalAction({
   args: {},
-  handler: async (ctx) => {
+  handler: async (ctx): Promise<{ remindersSent: number }> => {
     const now = Date.now();
     const backendUrl = process.env.BACKEND_URL || "http://localhost:3001";
 
     // Get pending tasks from the query
-    const tasks = await ctx.runQuery(api.tasks.getPendingTasksForReminders, {
+    const tasks: Array<{
+      _id: string;
+      title: string;
+      description?: string;
+      assigneeName?: string;
+      assigneeEmail: string;
+      creatorEmail: string;
+      createdAt: number;
+    }> = await ctx.runQuery(internal.tasks.getPendingTasksForReminders, {
       now,
     });
 
@@ -106,7 +114,7 @@ export const completeViaWebhook = internalAction({
   handler: async (ctx, args) => {
     try {
       const result: { success: boolean; alreadyCompleted?: boolean } = await ctx.runMutation(
-        api.tasks.complete,
+        internal.tasks.complete,
         {
           emailToken: args.emailToken,
         },
@@ -119,7 +127,7 @@ export const completeViaWebhook = internalAction({
         });
 
         if (task) {
-          const creator = await ctx.runQuery(api.users.get, {
+          const creator = await ctx.runQuery(internal.users.get, {
             userId: task.creatorId,
           });
 

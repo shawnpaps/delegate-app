@@ -3,10 +3,14 @@ import { v } from "convex/values";
 
 export default defineSchema({
   users: defineTable({
-    workosId: v.string(),
+    authId: v.optional(v.string()),
+    workosId: v.optional(v.string()),
     email: v.string(),
     name: v.string(),
-  }).index("by_workosId", ["workosId"]),
+  })
+    .index("by_authId", ["authId"])
+    .index("by_workosId", ["workosId"])
+    .index("by_email", ["email"]),
 
   tasks: defineTable({
     title: v.string(),
@@ -21,7 +25,8 @@ export default defineSchema({
   })
     .index("by_creator", ["creatorId"])
     .index("by_emailToken", ["emailToken"])
-    .index("by_creator_and_status", ["creatorId", "status"]),
+    .index("by_creator_and_status", ["creatorId", "status"])
+    .index("by_status_and_reminder", ["status", "reminderAt"]),
 
   assignees: defineTable({
     userId: v.id("users"),

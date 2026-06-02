@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { query, mutation, internalQuery, internalMutation } from "./_generated/server";
-import { api } from "./_generated/api";
+import { internal } from "./_generated/api";
+import { getCurrentUser } from "./authUsers";
 
 // Public mutation to create a task
 export const create = mutation({
@@ -17,14 +18,11 @@ export const create = mutation({
       throw new Error("Not authenticated");
     }
 
-    // Debug: Log the full identity object to see available fields
-    console.log("[DEBUG] WorkOS Identity:", JSON.stringify(identity, null, 2));
-
     // Get or create user
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_workosId", (q) => q.eq("workosId", identity.subject))
-      .unique();
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
 
     // Extract email from various possible locations in identity
     const userEmail = identity.email || 
@@ -39,25 +37,7 @@ export const create = mutation({
 
     console.log("[DEBUG] Extracted email:", userEmail, "name:", userName);
 
-    let userId;
-    if (!user) {
-      userId = await ctx.db.insert("users", {
-        workosId: identity.subject,
-        email: userEmail,
-        name: userName,
-      });
-      console.log("[DEBUG] Created new user:", userId, "with email:", userEmail);
-    } else {
-      userId = user._id;
-      // Update user if email/name is missing
-      if (!user.email || user.email === "" || !user.name || user.name === "") {
-        await ctx.db.patch(userId, {
-          email: userEmail || user.email,
-          name: userName || user.name,
-        });
-        console.log("[DEBUG] Updated existing user:", userId, "with email:", userEmail);
-      }
-    }
+    const userId = user._id;
 
     // Generate unique token for email completion
     const emailToken = crypto.randomUUID();
@@ -83,7 +63,7 @@ export const create = mutation({
       assigneeEmail: args.assigneeEmail
     });
     
-    await ctx.scheduler.runAfter(0, api.actions.sendAssigneeEmail, {
+    await ctx.scheduler.runAfter(0, internal.actions.sendAssigneeEmail, {
       taskId,
       assigneeEmail: args.assigneeEmail,
       assigneeName: args.assigneeName,
@@ -107,11 +87,7 @@ export const list = query({
       return [];
     }
 
-    // Get user
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_workosId", (q) => q.eq("workosId", identity.subject))
-      .unique();
+    const user = await getCurrentUser(ctx);
 
     if (!user) {
       return [];
@@ -135,10 +111,7 @@ export const pending = query({
       return [];
     }
 
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_workosId", (q) => q.eq("workosId", identity.subject))
-      .unique();
+    const user = await getCurrentUser(ctx);
 
     if (!user) {
       return [];
@@ -165,10 +138,7 @@ export const get = query({
       return null;
     }
 
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_workosId", (q) => q.eq("workosId", identity.subject))
-      .unique();
+    const user = await getCurrentUser(ctx);
 
     if (!user) {
       return null;
@@ -207,11 +177,7 @@ export const completeById = mutation({
       throw new Error("Not authenticated");
     }
 
-    // Get user
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_workosId", (q) => q.eq("workosId", identity.subject))
-      .unique();
+    const user = await getCurrentUser(ctx);
 
     if (!user) {
       throw new Error("User not found");
@@ -274,8 +240,9 @@ export const getPendingTasksForReminders = internalQuery({
   handler: async (ctx, args) => {
     const tasks = await ctx.db
       .query("tasks")
-      .withIndex("by_creator_and_status", (q) => q.eq("status", "pending"))
-      .filter((q) => q.lt(q.field("reminderAt"), args.now))
+      .withIndex("by_status_and_reminder", (q) =>
+        q.eq("status", "pending").lt("reminderAt", args.now),
+      )
       .take(100);
 
     // Get creator info for each task

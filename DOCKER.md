@@ -19,7 +19,7 @@ This document explains how to deploy the Delegate App using Docker and Docker Co
 2. **Configure environment variables:**
    ```bash
    cp .env.docker.example .env
-   # Edit .env with your actual values from Convex, WorkOS, and Resend
+   # Edit .env with your actual values from Convex, Clerk, and Resend
    ```
 
 3. **Build and start the containers:**
@@ -38,8 +38,8 @@ This document explains how to deploy the Delegate App using Docker and Docker Co
 | Variable | Description | Where to Get It |
 |----------|-------------|-----------------|
 | `VITE_CONVEX_URL` | Your Convex deployment URL | Convex Dashboard → Settings → URL |
-| `VITE_WORKOS_CLIENT_ID` | WorkOS Auth client ID | WorkOS Dashboard → Configuration |
-| `VITE_WORKOS_REDIRECT_URI` | OAuth redirect URL | Must match your domain + `/auth/callback` |
+| `VITE_CLERK_PUBLISHABLE_KEY` | Clerk publishable key for the frontend | Clerk Dashboard → API Keys |
+| `CLERK_JWT_ISSUER_DOMAIN` | Clerk Frontend API URL for Convex JWT validation. Set this in Convex, not Docker. | Clerk Dashboard → Configure → Integrations → Convex |
 | `RESEND_API_KEY` | Resend API key | Resend Dashboard → API Keys |
 | `RESEND_DOMAIN` | Verified sending/receiving domain | Resend Dashboard → Domains |
 | `RESEND_WEBHOOK_SECRET` | Webhook signing secret for inbound email events | Resend Dashboard → Webhooks |
@@ -52,8 +52,14 @@ When deploying to a VPS, update these URLs to use your domain or IP:
 
 ```env
 VITE_BACKEND_URL=https://api.yourdomain.com
-VITE_WORKOS_REDIRECT_URI=https://app.yourdomain.com/auth/callback
+VITE_CLERK_PUBLISHABLE_KEY=pk_live_...
 BACKEND_URL=https://api.yourdomain.com
+```
+
+Set `CLERK_JWT_ISSUER_DOMAIN` in Convex, not as a Docker build arg:
+
+```bash
+npx convex env set --prod CLERK_JWT_ISSUER_DOMAIN https://your-production-clerk-frontend-api-url
 ```
 
 ## Docker Commands
@@ -170,5 +176,5 @@ docker-compose up -d --build
 For issues related to:
 - **Docker/Deployment**: Check this guide and Docker logs
 - **Convex**: Visit https://docs.convex.dev
-- **WorkOS Auth**: Visit https://workos.com/docs
+- **Clerk Auth**: Visit https://clerk.com/docs
 - **Resend**: Visit https://resend.com/docs

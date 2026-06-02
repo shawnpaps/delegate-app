@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
+import { getCurrentUser } from "./authUsers";
 
 export const create = mutation({
   args: {
@@ -12,22 +13,11 @@ export const create = mutation({
       throw new Error("Not authenticated");
     }
 
-    // Get or create user
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_workosId", (q) => q.eq("workosId", identity.subject))
-      .unique();
-
-    let userId;
+    const user = await getCurrentUser(ctx);
     if (!user) {
-      userId = await ctx.db.insert("users", {
-        workosId: identity.subject,
-        email: identity.email || "",
-        name: identity.name || identity.email || "",
-      });
-    } else {
-      userId = user._id;
+      throw new Error("Not authenticated");
     }
+    const userId = user._id;
 
     // Check if assignee with this email already exists for this user
     const existing = await ctx.db
@@ -56,11 +46,7 @@ export const list = query({
       return [];
     }
 
-    // Get user
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_workosId", (q) => q.eq("workosId", identity.subject))
-      .unique();
+    const user = await getCurrentUser(ctx);
 
     if (!user) {
       return [];
@@ -84,11 +70,7 @@ export const remove = mutation({
       throw new Error("Not authenticated");
     }
 
-    // Get user
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_workosId", (q) => q.eq("workosId", identity.subject))
-      .unique();
+    const user = await getCurrentUser(ctx);
 
     if (!user) {
       throw new Error("User not found");

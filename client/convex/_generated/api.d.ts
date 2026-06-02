@@ -10,6 +10,7 @@
 
 import type * as actions from "../actions.js";
 import type * as assignees from "../assignees.js";
+import type * as authUsers from "../authUsers.js";
 import type * as http from "../http.js";
 import type * as tasks from "../tasks.js";
 import type * as users from "../users.js";
@@ -23,6 +24,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   actions: typeof actions;
   assignees: typeof assignees;
+  authUsers: typeof authUsers;
   http: typeof http;
   tasks: typeof tasks;
   users: typeof users;

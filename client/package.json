@@ -10,9 +10,7 @@
     "preview": "vp preview"
   },
   "dependencies": {
-    "@convex-dev/workos": "^0.0.1",
-    "@convex-dev/workos-authkit": "^0.2.2",
-    "@workos-inc/authkit-react": "^0.16.1",
+    "@clerk/react": "^6.7.2",
     "convex": "^1.36.1",
     "react": "^19.2.5",
     "react-dom": "^19.2.5"
