@@ -13,6 +13,9 @@ createRoot(document.getElementById("root")!).render(
     <AuthKitProvider
       clientId={import.meta.env.VITE_WORKOS_CLIENT_ID as string}
       redirectUri={import.meta.env.VITE_WORKOS_REDIRECT_URI as string}
+      onRedirectCallback={() => {
+        window.history.replaceState({}, "", "/");
+      }}
     >
       <ConvexProviderWithAuthKit client={convex} useAuth={useAuth}>
         <App />
