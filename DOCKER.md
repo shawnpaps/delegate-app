@@ -62,6 +62,15 @@ Set `CLERK_JWT_ISSUER_DOMAIN` in Convex, not as a Docker build arg:
 npx convex env set --prod CLERK_JWT_ISSUER_DOMAIN https://your-production-clerk-frontend-api-url
 ```
 
+Set `BACKEND_URL` in Convex as well. The task email sender runs inside Convex,
+so the Docker container's `BACKEND_URL` value is not visible to the Convex
+action:
+
+```bash
+cd client
+pnpm exec convex env set --prod BACKEND_URL https://delegateapi.sudocreate.app
+```
+
 ## Docker Commands
 
 ```bash

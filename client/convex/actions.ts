@@ -4,6 +4,16 @@ import { v } from "convex/values";
 import { internalAction } from "./_generated/server";
 import { api, internal } from "./_generated/api";
 
+function getBackendUrl() {
+  const backendUrl = process.env.BACKEND_URL;
+  if (!backendUrl) {
+    throw new Error(
+      "BACKEND_URL is not configured in Convex. Set it to the public email backend URL, e.g. https://delegateapi.sudocreate.app",
+    );
+  }
+  return backendUrl;
+}
+
 // Action to send assignee email (runs in background in Node.js runtime)
 export const sendAssigneeEmail = internalAction({
   args: {
@@ -17,7 +27,7 @@ export const sendAssigneeEmail = internalAction({
     description: v.optional(v.string()),
   },
   handler: async (_ctx, args) => {
-    const backendUrl = process.env.BACKEND_URL || "http://localhost:3001";
+    const backendUrl = getBackendUrl();
     console.log(`[DEBUG] sendAssigneeEmail action started for task ${args.taskId}`);
     console.log(`[DEBUG] Received args:`, JSON.stringify(args, null, 2));
     console.log(`[DEBUG] Backend URL: ${backendUrl}`);
@@ -65,7 +75,7 @@ export const checkAndSendReminders = internalAction({
   args: {},
   handler: async (ctx): Promise<{ remindersSent: number }> => {
     const now = Date.now();
-    const backendUrl = process.env.BACKEND_URL || "http://localhost:3001";
+    const backendUrl = getBackendUrl();
 
     // Get pending tasks from the query
     const tasks: Array<{
@@ -132,7 +142,7 @@ export const completeViaWebhook = internalAction({
           });
 
           if (creator) {
-            const backendUrl = process.env.BACKEND_URL || "http://localhost:3001";
+            const backendUrl = getBackendUrl();
             await fetch(`${backendUrl}/api/send-completion-confirmation`, {
               method: "POST",
               headers: {
