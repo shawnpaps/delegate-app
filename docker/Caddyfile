@@ -1,9 +1,0 @@
-{$FRONTEND_HOST} {
-	encode zstd gzip
-	reverse_proxy frontend:80
-}
-
-{$BACKEND_HOST} {
-	encode zstd gzip
-	reverse_proxy backend:3001
-}
