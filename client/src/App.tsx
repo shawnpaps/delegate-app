@@ -1,6 +1,6 @@
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useAuth } from "@workos-inc/authkit-react";
-import { Authenticated, Unauthenticated, AuthLoading, useConvexAuth } from "convex/react";
+import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
 import { TaskCreation } from "./components/TaskCreation";
 import { TaskList } from "./components/TaskList";
 import { AssigneeManager } from "./components/AssigneeManager";
