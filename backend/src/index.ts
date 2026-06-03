@@ -27,10 +27,24 @@ console.log("Resend config:", {
   hasApiKey: !!RESEND_API_KEY,
   apiKeyLength: RESEND_API_KEY?.length || 0,
   hasWebhookSecret: !!RESEND_WEBHOOK_SECRET,
+  hasConvexHttpUrl: !!CONVEX_HTTP_URL,
 });
 
 const resend = new Resend(RESEND_API_KEY);
 console.log("[DEBUG] Resend SDK client initialized successfully");
+
+function convexHttpActionUrl(path: string): string {
+  if (!CONVEX_HTTP_URL) {
+    throw new Error("CONVEX_HTTP_URL is not configured");
+  }
+
+  const baseUrl = CONVEX_HTTP_URL.endsWith("/")
+    ? CONVEX_HTTP_URL.slice(0, -1)
+    : CONVEX_HTTP_URL;
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+
+  return `${baseUrl}${normalizedPath}`;
+}
 
 // Helper function to send email via Resend SDK
 async function sendResendEmail(params: {
@@ -545,7 +559,7 @@ app.post("/api/webhook/email", async (c) => {
     }
 
     // Call Convex to complete the task
-    const response = await fetch(`${CONVEX_HTTP_URL}/api/complete-task`, {
+    const response = await fetch(convexHttpActionUrl("/complete-task"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -565,8 +579,11 @@ app.post("/api/webhook/email", async (c) => {
     // If task was just completed (not already completed), send confirmation
     if (result.success && !result.alreadyCompleted) {
       // Get task details to send confirmation
+      const taskUrl = new URL(convexHttpActionUrl("/task-by-token"));
+      taskUrl.searchParams.set("emailToken", emailToken);
+
       const taskResponse = await fetch(
-        `${CONVEX_HTTP_URL}/api/task-by-token?emailToken=${emailToken}`,
+        taskUrl,
         {
           headers: {
             Authorization: `Bearer ${CONVEX_ADMIN_KEY}`,
@@ -595,7 +612,7 @@ app.post("/api/trigger-reminders", async (c) => {
   try {
     // This would be called by a scheduler (like cron)
     // Fetch pending tasks that need reminders from Convex
-    const response = await fetch(`${CONVEX_HTTP_URL}/api/pending-reminders`, {
+    const response = await fetch(convexHttpActionUrl("/pending-reminders"), {
       headers: {
         Authorization: `Bearer ${CONVEX_ADMIN_KEY}`,
       },
@@ -620,7 +637,7 @@ app.post("/api/trigger-reminders", async (c) => {
         });
 
         // Mark reminder as sent
-        await fetch(`${CONVEX_HTTP_URL}/api/mark-reminder-sent`, {
+        await fetch(convexHttpActionUrl("/mark-reminder-sent"), {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

@@ -43,7 +43,7 @@ This document explains how to deploy the Delegate App using Docker and Docker Co
 | `RESEND_API_KEY` | Resend API key | Resend Dashboard → API Keys |
 | `RESEND_DOMAIN` | Verified sending/receiving domain | Resend Dashboard → Domains |
 | `RESEND_WEBHOOK_SECRET` | Webhook signing secret for inbound email events | Resend Dashboard → Webhooks |
-| `CONVEX_HTTP_URL` | Convex HTTP actions URL | Same as `VITE_CONVEX_URL` |
+| `CONVEX_HTTP_URL` | Convex HTTP actions URL | Convex HTTP Actions URL, typically your deployment URL with `.convex.site` instead of `.convex.cloud` |
 | `CONVEX_ADMIN_KEY` | Convex admin key | Convex Dashboard → Settings → Deploy Key |
 
 ### VPS-Specific Configuration
@@ -69,6 +69,14 @@ action:
 ```bash
 cd client
 pnpm exec convex env set --prod BACKEND_URL https://delegateapi.sudocreate.app
+```
+
+Set `CONVEX_HTTP_URL` in Docker to the Convex HTTP Actions URL, not the frontend
+client URL. For production Convex deployments this is usually:
+
+```env
+VITE_CONVEX_URL=https://your-deployment.convex.cloud
+CONVEX_HTTP_URL=https://your-deployment.convex.site
 ```
 
 ## Docker Commands
